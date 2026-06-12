@@ -12,7 +12,7 @@ istio:
 # AWS配置
 aws:
   loadBalancer:
-    certificateArn: "arn:aws:acm:ap-northeast-1:123456789123:certificate/ce9f5c4a-2a42-4996-9fae-b377de0f8326"  
+    certificateArn: "arn:aws:acm:ap-northeast-1:861276125286:certificate/29aa3c86-10eb-4cc1-82d2-59ea086073ad"  
     dnsupdate: true
     deregistrationDelay: "30"
     healthcheck:
