@@ -1,0 +1,116 @@
+# ----- 自動生成 -----
+app:
+  name: 服務名稱
+  namespace: 命名空間
+  environment: 環境
+  team: 團隊名稱
+
+# ----- 必填 -----
+
+# 【服務對外存取】
+expose:
+  enabled: true
+  domain: ycfps.yungching.com.tw # 當 ture 時必填
+
+internal:
+  # 是否啟用內部服務
+  enabled: false
+  domain: eric.istio.test.com # 當 true 時必填
+
+# Istio配置
+istio:
+  enabled: false  # 是否啟用Istio
+
+# AWS配置
+aws:
+  loadBalancer:
+    certificateArn: ""  # 開發環境不使用SSL
+    dnsupdate: true
+
+# 【容器: 環境變數/資源限制】
+image:
+  repository: eahub.evertrust.com.tw/ea/xxxx
+  tag: "20250930.1"
+  containerPort: 80
+  imagePullPolicy: IfNotPresent
+
+fuseMount:
+  enabled: false # 預設關閉，避免不必要的安全風險
+
+# 【資源限制】
+# 單位： memory = Mi , cpu = m
+resources:
+  requests:
+    cpu: "350m"
+    memory: "1000Mi"
+  limits:
+    cpu: "350m"
+    memory: "1500Mi"
+
+# 【副本 & 自動擴展】
+defaultReplicas: 4
+
+hpaAutoscaling:
+  enabled: true # 是否啟用自動擴展
+  # 最小~大副本數
+  minReplicas: 4
+  maxReplicas: 12
+  # 當 CPU/記憶體使用率達到百分比時，自動擴展
+  targets:
+    cpu: 50
+    # memory: 50
+
+# 【部屬策略】
+# 需要完整版本切換
+useBlueGreen:
+  enabled: true # 是否啟用藍綠部屬
+  # 切換的延遲時間，單位 s秒 / m分
+  switchDelay: 30s
+
+# 【健康檢查】
+probes:
+  startupProbe:
+    httpGet:
+      path: /health
+      port: 80
+    initialDelaySeconds: 10
+    periodSeconds: 20
+    failureThreshold: 6
+  # 服務就緒狀態檢測
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 80
+    initialDelaySeconds: 10
+    periodSeconds: 20
+    failureThreshold: 6
+  # 服務存活狀態檢測
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 80
+    initialDelaySeconds: 10
+    periodSeconds: 20
+    failureThreshold: 6
+
+# ----- 選填 -----
+
+# 【啟動NodePort】
+useNodePort: false
+
+# 【deep links】
+monitoring:
+  elasticAPM:
+    baseUrl: "srveaobscp1.evertrust.com.tw:5601/app/apm/services"
+    envs:
+      development: "Test"
+      stage: "Stage"
+      production: "Production"
+  grafana:
+    envs:
+      development:
+        baseUrl: "10.101.1.226:30957/k8s/clusters/c-m-n858zb2v/api/v1/namespaces/cattle-monitoring-system/services/http:rancher-monitoring-grafana:80/proxy/d/rancher-workload-pods-1/rancher-workload-pods?orgId=1&from=now-5m&to=now&timezone=browser&var-datasource=prometheus&var-kind=ReplicaSet&refresh=30m&var-namespace="
+      stage:
+        baseUrl: "10.160.30.16:30957/k8s/clusters/c-m-n858zb2v/api/v1/namespaces/cattle-monitoring-system/services/http:rancher-monitoring-grafana:80/proxy/d/rancher-workload-pods-1/rancher-workload-pods?orgId=1&from=now-5m&to=now&timezone=browser&var-datasource=prometheus&var-kind=ReplicaSet&refresh=30m&var-namespace="
+      production:
+        baseUrl: "10.101.1.226:30957/k8s/clusters/c-m-n858zb2v/api/v1/namespaces/cattle-monitoring-system/services/http:rancher-monitoring-grafana:80/proxy/d/rancher-workload-pods-1/rancher-workload-pods?orgId=1&from=now-5m&to=now&timezone=browser&var-datasource=prometheus&var-kind=ReplicaSet&refresh=30m&var-namespace="

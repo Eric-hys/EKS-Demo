@@ -1,0 +1,118 @@
+# ----- 必填 -----
+
+# 【服務允許外部存取】
+expose:
+  enabled: true
+  domain: nginx.demo.com.tw # 當 ture 時必填
+
+internal:
+  # 是否啟用內部服務訪問
+  enabled: false
+  domain: internal.istio.com # 當 true 時必填
+
+# Istio配置
+istio:
+  enabled: false  # 是否啟用Istio
+
+# AWS配置
+aws:
+  loadBalancer:
+    certificateArn: "arn:aws:acm:ap-northeast-1:123456789123:certificate/ce9f5c4a-2a42-4996-9fae-b377de0f8326"  
+    dnsupdate: true
+    deregistrationDelay: "30"
+    healthcheck:
+      intervalSeconds: "5"
+      timeoutSeconds: "3"
+      healthyThreshold: "2"
+      unhealthyThreshold: "2"
+
+# 【容器: 環境變數/資源限制】
+image:
+  repository: nginx
+  tag: "latest"
+  containerPort: 80
+  imagePullPolicy: IfNotPresent
+
+service:
+  port: 80
+  
+efsMount:
+  enabled: false
+  mountPath: /app/w3clog
+  pvcName: efs-pvc-ea-fps
+
+# 【資源限制】
+# 單位： memory = Mi , cpu = m
+resources:
+  requests:
+    cpu: "800m"
+    memory: "1000Mi"
+  limits:
+    cpu: "800m"
+    memory: "1250Mi"
+
+# 【副本 & 自動擴展】
+defaultReplicas: 4
+
+hpaAutoscaling:
+  enabled: true # 是否啟用自動擴展
+  # 最小~大副本數
+  minReplicas: 4
+  maxReplicas: 8
+  # 當 CPU/記憶體使用率達到百分比時，自動擴展
+  targets:
+    cpu: 20
+
+# 【部屬策略】
+# 需要完整版本切換
+useBlueGreen:
+  enabled: true # 是否啟用藍綠部屬
+  # 切換的延遲時間，單位 s秒 / m分
+  switchDelay: 60s
+  autoPromotionEnabled: true  # 是否自動切換到新版本
+  autoPromotionSeconds: 60    # 自動切換的延遲時間，單位秒
+
+# 【健康檢查】
+probes:
+  startupProbe:
+    httpGet:
+      path: /health
+      port: 80
+    initialDelaySeconds: 10
+    periodSeconds: 20
+    failureThreshold: 6
+  # 服務就緒狀態檢測
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 80
+    periodSeconds: 5
+    timeoutSeconds: 2
+    successThreshold: 1
+    failureThreshold: 2
+  # 服務存活狀態檢測
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 80
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    failureThreshold: 3
+
+# 【選擇Node】
+nodeSelect:
+  enabled: true
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: workload
+            operator: In
+            values:
+              - test
+
+# ----- 選填 -----
+
+# 【啟動NodePort】
+useNodePort: false

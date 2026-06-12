@@ -1,0 +1,52 @@
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: eks-deploy-production-service-appset
+  namespace: argocd
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+  - git:
+      repoURL: http://
+      revision: HEAD
+      files:
+      - path: apps/*/*/production/template.yaml
+  template:
+    metadata:
+      name: '{{ .path.basename }}-{{ index .path.segments 1 }}-{{ index .path.segments 2 }}'
+      labels:
+        app: '{{ index .path.segments 1 }}'
+        service: '{{ index .path.segments 2 }}'
+        environment: '{{ .path.basename }}'
+    spec:
+      project: default
+      source:
+        repoURL: http://
+        targetRevision: HEAD
+        path: 'charts/{{ index .template }}'
+        helm:
+          valueFiles:
+          - '/{{ .path.path }}/values.yaml'
+          parameters:
+          - name: app.name
+            value: '{{ index .path.segments 2 }}'
+          - name: app.namespace
+            value: '{{ index .path.segments 1 }}-{{ index .path.segments 2 }}'
+          - name: app.environment
+            value: '{{ .path.basename }}'
+          - name: app.team
+            value: '{{ index .path.segments 1 }}-team'
+      destination:
+        name: in-cluster
+        namespace: '{{ index .path.segments 1 }}-{{ index .path.segments 2 }}'
+      syncPolicy:
+        # automated:
+        #   prune: true
+        #   selfHeal: true
+        syncOptions:
+        # - selfHeal=true
+        - CreateNamespace=true
+        - PrunePropagationPolicy=foreground
+        - PruneLast=true
+      revisionHistoryLimit: 3

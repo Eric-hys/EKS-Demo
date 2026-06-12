@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: {{ .Values.app.namespace }}
+  name: "{{ .Values.app.name }}-deployment"
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ .Values.app.name }}
+  replicas: 1 
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ .Values.app.name }}
+
+    spec:
+      containers:
+      - image: nginx:latest
+        imagePullPolicy: Always
+        name: {{ .Values.app.name }}
+        ports:
+        - containerPort: 80
+        env:
+          - name: MACHINENAME
+            value: "{{ .Values.app.name }}-{{ .Values.app.environment }}"
+          - name: TZ
+            value: "Asia/Taipei"
+          - name: ASPNETCORE_ENVIRONMENT
+            value: "Release"
+        resources:
+          requests:
+            cpu: "350m"       # 至少預留 0.5 個 vCPU
+            memory: "1000Mi"   # 至少預留 512Mi 記憶體
+          limits:
+            cpu: "350m"      # 最多使用 1 個 vCPU
+            memory: "1500Mi"     # 最多使用 1Gi 記憶體
+      #   volumeMounts:
+      #   - name: w3clog-volume
+      #     mountPath: /data/w3clog
+      # volumes:
+      # - name: w3clog-volume
+      #   hostPath:
+      #     path: /var/log/containers/{{ .Values.app.name }}/w3clog
+#      affinity:
+#        nodeAffinity:
+##          requiredDuringSchedulingIgnoredDuringExecution:
+#           nodeSelectorTerms:
+#            - matchExpressions:
+#              - key: workload
+#                operator: In
+#                values:
+#                  - yc

@@ -1,0 +1,53 @@
+{{- if and .Values.hpaAutoscaling.enabled (or .Values.hpaAutoscaling.targets.cpu .Values.hpaAutoscaling.targets.memory) }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: "{{ .Values.app.name }}-hpa"
+  namespace: {{ .Values.app.namespace }}
+
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: "{{ .Values.app.name }}-deployment"
+  minReplicas: {{ .Values.hpaAutoscaling.minReplicas | default 1 }}
+  maxReplicas: {{ .Values.hpaAutoscaling.maxReplicas | default 3 }}
+  metrics:
+{{- if .Values.hpaAutoscaling.targets.cpu  }}
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization : {{ .Values.hpaAutoscaling.targets.cpu }}
+{{- end }}
+{{- if .Values.hpaAutoscaling.targets.memory  }}
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization : {{ .Values.hpaAutoscaling.targets.memory }}
+{{- end }}
+  behavior:
+    scaleUp:
+      # scale up 時的控制（避免瞬間爆量）
+      stabilizationWindowSeconds: 60        # 觀察60秒再決定是否擴容
+      policies:
+        - type: Percent
+          value: 100                         # 最多一次擴容 100%（例如4→8個）
+          periodSeconds: 60                  # 每60秒檢查一次
+        - type: Pods
+          value: 4                           # 或一次最多新增4個pod
+          periodSeconds: 60
+    scaleDown:
+      # scale down 時的控制（避免太快縮回去）
+      stabilizationWindowSeconds: 300        # 至少穩定5分鐘再縮容
+      policies:
+        - type: Percent
+          value: 50                          # 每次最多縮減50%
+          periodSeconds: 60
+        - type: Pods
+          value: 2                           # 或一次最多減少2個pod
+          periodSeconds: 60
+{{- end }}

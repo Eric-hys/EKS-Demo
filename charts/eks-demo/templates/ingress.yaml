@@ -1,0 +1,54 @@
+{{- if .Values.expose.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: "{{ .Values.app.name }}-ingress"
+  namespace: {{ .Values.app.namespace }}
+
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-path: {{ .Values.probes.readinessProbe.httpGet.path | default "/" }}
+
+    # 加快 ALB 健康檢查反應速度
+    alb.ingress.kubernetes.io/target-group-attributes: "deregistration_delay.timeout_seconds={{ .Values.aws.loadBalancer.deregistrationDelay | default 30 }}"
+    alb.ingress.kubernetes.io/healthcheck-interval-seconds: "{{ .Values.aws.loadBalancer.healthcheck.intervalSeconds | default 5 }}"
+    alb.ingress.kubernetes.io/healthcheck-timeout-seconds: "{{ .Values.aws.loadBalancer.healthcheck.timeoutSeconds | default 3 }}"
+    alb.ingress.kubernetes.io/healthy-threshold-count: "{{ .Values.aws.loadBalancer.healthcheck.healthyThreshold | default 2 }}"
+    alb.ingress.kubernetes.io/unhealthy-threshold-count: "{{ .Values.aws.loadBalancer.healthcheck.unhealthyThreshold | default 2 }}"
+    
+{{- if eq .Values.app.environment "production" }}
+    alb.ingress.kubernetes.io/load-balancer-name: lba-eks-prod-{{ .Values.app.namespace }}
+    {{- if .Values.aws.loadBalancer.dnsupdate }}
+    external-dns.alpha.kubernetes.io/hostname: "prod-{{ .Values.app.namespace }}.eks.yungching.com.tw"
+    {{- end }}
+{{- else }}
+    alb.ingress.kubernetes.io/load-balancer-name: lba-eks-dev-{{ .Values.app.namespace }}
+    {{- if .Values.aws.loadBalancer.dnsupdate }}
+    external-dns.alpha.kubernetes.io/hostname: "dev-{{ .Values.app.namespace }}.eks.yungching.com.tw"
+    {{- end }}
+{{- end }}
+
+{{- if .Values.aws.loadBalancer.certificateArn }}
+    alb.ingress.kubernetes.io/certificate-arn: {{ .Values.aws.loadBalancer.certificateArn }}
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTP": 80}, {"HTTPS": 443}]'
+    alb.ingress.kubernetes.io/ssl-redirect: '443'
+{{- end }}
+spec:
+  rules:
+  - host: 
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: "{{ .Values.app.namespace }}-service"
+            port:
+# {{- if .Values.useBlueGreen.enabled }}
+              number: 80
+# {{- else }}
+              # number: {{ .Values.service.port }}
+# {{- end }}
+{{- end }}

@@ -1,0 +1,5 @@
+apiVersion: v2
+name: eks-ping-pong-v2
+description: dev-eks-ping-pong template
+type: application
+version: 1.0.0
