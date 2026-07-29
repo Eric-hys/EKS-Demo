@@ -23,8 +23,6 @@ aws:
 
 # 【容器: 環境變數/資源限制】
 image:
-  # repository: eahub.evertrust.com.tw/ea/evertrust-ycfps-service
-  # tag: "20260122.1"
   repository: nginx
   tag: "latest"
   containerPort: 80
